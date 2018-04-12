@@ -15,4 +15,5 @@ void setup() {
 
 void loop() {
   Serial.println(sensor.readPress());
+  delay(50);
 }
