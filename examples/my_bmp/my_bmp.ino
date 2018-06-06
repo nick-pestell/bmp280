@@ -16,4 +16,5 @@ void setup() {
 void loop() {
   Serial.write(sensor.readPress());
   delay(50);
+
 }

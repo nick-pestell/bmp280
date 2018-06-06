@@ -40,6 +40,7 @@ while toc <= Tmax
 
 
 end
+save('pressureData.mat','data');
 
 
 
