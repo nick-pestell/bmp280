@@ -6,7 +6,8 @@ bmp280::bmp280(int slaveSelectPin){
 	
 	
 	// set up chip select pin
-	pinMode(slaveSelectPin, OUTPUT);
+	digitalWrite(slaveSelectPin, HIGH);
+    pinMode(slaveSelectPin, OUTPUT);
 
 	_slaveSelectPin = slaveSelectPin;
 	
@@ -21,14 +22,12 @@ void bmp280::initSPI(){
 
 bool bmp280::connect(){
 
-	if (readFrom(ID_REG,1) == 0x58){
-		// diable temp
-		byte osrs = readFrom(CTRL_MEAS_REG,1);
-		byte reset_osrs = (osrs & 0xE3);
-		writeTo(CTRL_MEAS_REG,reset_osrs);
-		return true;}
-		else{
+	if (readFrom(ID_REG,1) != 0x58){
 		return false;}
+	// disable temp
+	writeTo(CTRL_MEAS_REG,0x7);
+	return true;
+
 }
 	
 
@@ -68,14 +67,15 @@ void bmp280::writeTo(byte reg, byte value){
   SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));
   digitalWrite(_slaveSelectPin, LOW);
 
-  SPI.transfer(address); // send address
+  SPI.transfer(address & ~0x80); // send address
   SPI.transfer(value); // send value
   // de-select device
   digitalWrite(_slaveSelectPin, HIGH);
+  SPI.endTransaction();
 }
 
 // get pressure 
-byte bmp280::readPress(){
+uint16_t bmp280::readPress(){
 	
   // make address with reg and read bit
   byte address = (PRESS_REG1 | 0x80);
@@ -84,10 +84,29 @@ byte bmp280::readPress(){
 
   SPI.transfer(address); // send address
 
-  byte MS = SPI.transfer(0x00);
+  uint16_t MS = SPI.transfer(0x00);
   MS = MS << 8;
   byte LS = SPI.transfer(0x00);
-  byte result = MS | LS;
+  uint16_t result = MS | LS;
   digitalWrite(_slaveSelectPin, HIGH);
+  SPI.endTransaction();
   return result;
 }
+
+/*// read coeffecients
+void bmp280::readCoefficients(){
+
+    _bmp280_calib.dig_T1 = readFrom(BMP280_REGISTER_DIG_T1,2);
+    _bmp280_calib.dig_T2 = readFrom(BMP280_REGISTER_DIG_T2,2);
+    _bmp280_calib.dig_T3 = readFrom(BMP280_REGISTER_DIG_T3,2);
+
+    _bmp280_calib.dig_P1 = readFrom(BMP280_REGISTER_DIG_P1,2);
+    _bmp280_calib.dig_P2 = readFrom(BMP280_REGISTER_DIG_P2,2);
+    _bmp280_calib.dig_P3 = readFrom(BMP280_REGISTER_DIG_P3,2);
+    _bmp280_calib.dig_P4 = readFrom(BMP280_REGISTER_DIG_P4,2);
+    _bmp280_calib.dig_P5 = readFrom(BMP280_REGISTER_DIG_P5,2);
+    _bmp280_calib.dig_P6 = readFrom(BMP280_REGISTER_DIG_P6,2);
+    _bmp280_calib.dig_P7 = readFrom(BMP280_REGISTER_DIG_P7,2);
+    _bmp280_calib.dig_P8 = readFrom(BMP280_REGISTER_DIG_P8,2);
+    _bmp280_calib.dig_P9 = readFrom(BMP280_REGISTER_DIG_P9,2);
+}*/
